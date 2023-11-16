@@ -1,21 +1,21 @@
 import express, {Request} from 'express';
+import BancoMongoDB from './infra/banco/banco-mongodb';
+import ListarFilme from './aplicacao/listar-filme.use-case';
 
 // Cria uma instância do aplicativo Express
+const bancoMongoDB = new BancoMongoDB();
+
 const app = express();
 app.use(express.json())
 
-type Filme = {
-    id: number,
-    titulo: string,
-    descricao: string,
-    foto: string,
-}
-let filmes_repositorio:Filme[] = []
+
 
 
 // Define uma rota padrão
-app.get('/filmes', (req, res) => {
-    res.send("filme")        
+app.get('/filmes', async (req, res) => {
+    const listarFilme = new ListarFilme(bancoMongoDB)
+    const filmes = await listarFilme.execute()
+    res.send(filmes).status(200)        
 });
 
 app.post('/filmes', (req:Request, res) => {
@@ -25,6 +25,10 @@ app.post('/filmes', (req:Request, res) => {
         titulo,
         descricao,
         foto,
+    }
+    const filmeRepetido = filmes_repositorio.find(filme => filme.id === id)
+    if(filmeRepetido){
+         return res.status(400).send({erro:"Filme já cadastrado"})
     }
     filmes_repositorio.push(filme)
     res.status(201).send(filme)
@@ -49,3 +53,12 @@ app.delete('/filmes/:id', (req, res) => {
 app.listen(3000, () => {
     console.log('Servidor iniciado na porta 3000');
 });
+
+
+type Filme = {
+    id: number,
+    titulo: string,
+    descricao: string,
+    foto: string,
+}
+let filmes_repositorio:Filme[] = []
